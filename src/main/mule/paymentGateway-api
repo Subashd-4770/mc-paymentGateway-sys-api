@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:stripe="http://www.mulesoft.org/schema/mule/stripe" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/stripe http://www.mulesoft.org/schema/mule/stripe/current/mule-stripe.xsd  http://www.mulesoft.org/schema/mule/api-gateway  http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+    <apikit:config name="mc-paymentgateway-sys-api-config" api="resource::02c53825-8f52-4597-8f08-3e9e00a89276:mc-paymentgateway-sys-api:1.0.5:raml:zip:mc-paymentgateway-sys-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="mc-paymentgateway-sys-api-main">
+        <http:listener config-ref="HTTP_Listener_config" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="mc-paymentgateway-sys-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="mc-paymentgateway-sys-api-console">
+        <http:listener path="/console/*" config-ref="HTTP_Listener_config">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="mc-paymentgateway-sys-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="delete:\deleteCustomer:mc-paymentgateway-sys-api-config">
+        <logger level="INFO" doc:name="Logger" doc:id="bd117015-f1e5-471e-a521-abf73e26b4b3" message="#[&quot;Payment Job Started&quot;]" />
+        <stripe:delete-v1-customers-by-customer doc:name="Delete a customer" doc:id="e138bb64-848f-4aed-a1e1-1bd8fc0b3b69" config-ref="Stripe_Connector_Config" customer="cus_Uj5NjeOfYLb6O4" />
+        <logger level="INFO" doc:name="Logger" doc:id="702aae36-6eea-4f97-be67-f5dd53e2aee3" message="#[&quot;Payment Received&quot;]" />
+    </flow>
+    <flow name="get:\listAll:mc-paymentgateway-sys-api-config">
+        <logger level="INFO" doc:name="Logger" doc:id="10f9131c-375a-4799-8410-85ec7f94f078" message="#[&quot;Payment Received&quot;]" />
+        <stripe:get-v1-products doc:name="List all products" doc:id="2e601274-f8b5-415d-aa9f-d768418fa7d7" />
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Logger" doc:id="bc4e597e-a9ce-4ede-bbc2-4b8cd0d7123f" message="#[payload]" />
+    </flow>
+    <flow name="post:\createCustomer:application\json:mc-paymentgateway-sys-api-config">
+        <logger level="INFO" doc:name="Logger" doc:id="85af9822-10cb-4cd2-bc49-02071fe5c8a0" message="#[&quot;Started to Create Customer&quot;]" />
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <stripe:create-v1-customers doc:name="Create a customer" doc:id="afbd05b1-cdf4-4c88-87bb-42f84c34289f" config-ref="Stripe_Connector_Config" />
+        <logger level="INFO" doc:name="Logger" doc:id="afadb6cd-67a7-4cf5-9f0c-713603b87121" message="#[payload]" />
+    </flow>
+    <flow name="post:\payment:application\json:mc-paymentgateway-sys-api-config">
+        <logger level="INFO" doc:name="Logger" doc:id="14945f41-44df-4073-bb22-6a7c8b1295c4" message="#[&quot;Incoming Payment Request&quot;]" />
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/x-www-form-urlencoded
+---
+{
+	amount: payload.amount,
+    currency: payload.currency,
+    payment_method: payload.paymentMethod,
+    confirm: true,
+    "automatic_payment_methods[enabled]": true,
+    "automatic_payment_methods[allow_redirects]": "never"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Logger" doc:id="bf9ba35a-c014-48de-bd50-aa34f87e3f94" message="#[&quot;Stripe Key Loaded = &quot; ++ p(&quot;stripe.secret-key&quot;)]" />
+        <set-variable value="#[{&#xA;        &quot;Authorization&quot;: &quot;Bearer &quot; ++ p(&quot;stripe.secret-key&quot;),&#xA;        &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;&#xA;}]" doc:name="Set Variable" doc:id="ae7b18ef-1235-40a3-9d40-bb0126f4c6ab" variableName="headers" />
+        <until-successful maxRetries="5"
+                  millisBetweenRetries="6000"
+                  doc:name="Until Successful">
+
+    <try doc:name="Call Stripe API">
+
+        <http:request
+                config-ref="HTTP_Request_config"
+                method="POST"
+                path="v1/payment_inten"
+                responseTimeout="5000"
+                doc:name="Create Payment Intent">
+
+            <error-mapping sourceType="HTTP:TIMEOUT"
+                           targetType="PAYMENT:TIMEOUT"/>
+
+            <error-mapping sourceType="HTTP:CONNECTIVITY"
+                           targetType="PAYMENT:CONNECTIVITY"/>
+
+            <error-mapping sourceType="HTTP:RETRY_EXHAUSTED"
+                           targetType="PAYMENT:RETRY_EXHAUSTED"/>
+
+            <http:headers><![CDATA[#[vars.headers]]]></http:headers>
+
+        </http:request>
+
+        <error-handler>
+
+            <on-error-propagate type="PAYMENT:TIMEOUT">
+
+                <logger level="ERROR"
+                        message='#["Stripe Timeout : " ++ error.description]'/>
+
+                <raise-error
+                        type="APP:PAYMENT_TIMEOUT"
+                        description="Payment Gateway Timeout"/>
+
+            </on-error-propagate>
+
+            <on-error-propagate type="PAYMENT:CONNECTIVITY">
+
+                <logger level="ERROR"
+                        message='#["Stripe Connectivity Error : " ++ error.description]'/>
+
+                <raise-error
+                        type="APP:PAYMENT_CONNECTIVITY"
+                        description="Unable to connect to Stripe"/>
+
+            </on-error-propagate>
+
+            <on-error-propagate type="PAYMENT:RETRY_EXHAUSTED">
+
+                <logger level="ERROR"
+                        message='#["Retry Exhausted"]'/>
+
+                <raise-error
+                        type="APP:PAYMENT_RETRY_FAILED"
+                        description="Payment Failed After Maximum Retries"/>
+
+            </on-error-propagate>
+
+            <on-error-propagate type="ANY">
+
+                <logger level="ERROR"
+                        message='#["Stripe Error : " ++ error.description]'/>
+
+                <raise-error
+                        type="APP:PAYMENT_FAILED"
+                        description="Payment Processing Failed"/>
+
+            </on-error-propagate>
+
+        </error-handler>
+
+    </try>
+
+</until-successful>
+        <ee:transform doc:name="Transform Message" doc:id="cedfe8f5-3d8c-49fa-a3d7-b30a225d4b85">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    paymentId: payload.id,
+    status: payload.status,
+    amount: payload.amount,
+    currency: payload.currency,
+    timestamp: now()
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Logger" doc:id="8cebeaf9-6693-48e0-85b7-e4bcc80ddb9b" message="#[payload]" />
+        <error-handler>
+
+
+    <on-error-continue type="APP:PAYMENT_TIMEOUT">
+
+        <set-variable variableName="httpStatus"
+                      value="504"/>
+
+        <ee:transform doc:name="Payment Timeout Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[
+%dw 2.0
+output application/json
+---
+{
+    success: false,
+    status: 504,
+    message: error.description,
+    timestamp: now()
+}
+]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+    </on-error-continue>
+
+
+    <on-error-continue type="APP:PAYMENT_CONNECTIVITY">
+
+        <set-variable variableName="httpStatus"
+                      value="503"/>
+
+        <ee:transform doc:name="Connectivity Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[
+%dw 2.0
+output application/json
+---
+{
+    success: false,
+    status: 503,
+    message: error.description,
+    timestamp: now()
+}
+]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+    </on-error-continue>
+
+    <on-error-continue type="APP:PAYMENT_RETRY_FAILED">
+
+        <set-variable variableName="httpStatus"
+                      value="503"/>
+
+        <ee:transform doc:name="Retry Failed Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[
+%dw 2.0
+output application/json
+---
+{
+    success: false,
+    status: 503,
+    message: error.description,
+    timestamp: now()
+}
+]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+    </on-error-continue>
+
+    <on-error-continue type="APP:PAYMENT_FAILED">
+
+        <set-variable variableName="httpStatus"
+                      value="500"/>
+
+        <ee:transform doc:name="Payment Failed Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[
+%dw 2.0
+output application/json
+---
+{
+    success: false,
+    status: 500,
+    message: error.description,
+    timestamp: now()
+}
+]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+    </on-error-continue>
+
+    <on-error-continue type="ANY">
+
+        <set-variable variableName="httpStatus"
+                      value="500"/>
+
+        <ee:transform doc:name="Internal Server Error">
+            <ee:message>
+                <ee:set-payload><![CDATA[
+%dw 2.0
+output application/json
+---
+{
+    success: false,
+    status: 500,
+    message: "Internal Server Error",
+    error: error.description,
+    timestamp: now()
+}
+]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+    </on-error-continue>
+
+</error-handler>
+    </flow>
+</mule>
