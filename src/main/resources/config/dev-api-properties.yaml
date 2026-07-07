@@ -1,0 +1,13 @@
+http:
+  host: "localhost"
+  port: "8081"
+  
+stripe:
+  base-uri: "https://api.stripe.com"
+  
+discovery:
+  api-id: "20984642"
+  
+request:
+  host: "api.stripe.com"
+  port: "443"
